@@ -6,9 +6,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: YOUR_GIT_REPO_URL
+    repoURL: https://github.com/SirSabek/Creatio-GitOps
     targetRevision: main
-    path: apps/creatio/base
+    path: apps/Creatio/base
   destination:
     server: https://kubernetes.default.svc
     namespace: creatio
