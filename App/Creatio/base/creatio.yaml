@@ -1,0 +1,84 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: creatio
+  namespace: creatio
+spec:
+  ports:
+    - port: 5000
+      name: http
+    - port: 5002
+      name: https
+  selector:
+    app: creatio
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: creatio
+  namespace: creatio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: creatio
+  template:
+    metadata:
+      labels:
+        app: creatio
+    spec:
+      volumes:
+        - name: app-config
+          emptyDir: {}
+        - name: logs
+          emptyDir: {}   # for dev; use PVC if you want
+      initContainers:
+        - name: write-connectionstrings
+          image: alpine:3.20
+          env:
+            - name: POSTGRES_DB
+              valueFrom: { secretKeyRef: { name: creatio-secrets, key: POSTGRES_DB } }
+            - name: POSTGRES_USER
+              valueFrom: { secretKeyRef: { name: creatio-secrets, key: POSTGRES_USER } }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: creatio-secrets, key: POSTGRES_PASSWORD } }
+            - name: REDIS_HOST
+              valueFrom: { secretKeyRef: { name: creatio-secrets, key: REDIS_HOST } }
+            - name: REDIS_PORT
+              valueFrom: { secretKeyRef: { name: creatio-secrets, key: REDIS_PORT } }
+            - name: REDIS_DB
+              valueFrom: { secretKeyRef: { name: creatio-secrets, key: REDIS_DB } }
+          command: ["/bin/sh","-lc"]
+          args:
+            - |
+              cat > /config/ConnectionStrings.config <<'EOF'
+              <?xml version="1.0" encoding="utf-8"?>
+              <connectionStrings>
+                <add name="db" connectionString="Server=db;Port=5432;Database=${POSTGRES_DB};User ID=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Timeout=500;CommandTimeout=400;MaxPoolSize=1024;" />
+                <add name="redis" connectionString="host=${REDIS_HOST};db=${REDIS_DB};port=${REDIS_PORT}" />
+              </connectionStrings>
+              EOF
+          volumeMounts:
+            - name: app-config
+              mountPath: /config
+      containers:
+        - name: creatio
+          image: sirsabek/creatio:8.3-net8
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+            - containerPort: 5002
+          env:
+            - name: TZ
+              value: Africa/Cairo
+            - name: COMPlus_ThreadPool_ForceMinWorkerThreads
+              value: "100"
+            - name: ASPNETCORE_URLS
+              value: "http://+:5000;https://+:5002"
+          volumeMounts:
+            # Mount the generated ConnectionStrings.config into app root
+            - name: app-config
+              mountPath: /app/ConnectionStrings.config
+              subPath: ConnectionStrings.config
+            - name: logs
+              mountPath: /app/Logs

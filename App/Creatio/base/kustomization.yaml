@@ -1,0 +1,7 @@
+resources:
+  - namespace.yaml
+  - secrets.yaml
+  - postgres.yaml
+  - redis.yaml
+  - creatio.yaml
+  - ingress.yaml
