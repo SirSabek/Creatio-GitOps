@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/SirSabek/Creatio-GitOps
     targetRevision: main
-    path: apps/Creatio/base
+    path: App/Creatio/base
   destination:
     server: https://kubernetes.default.svc
     namespace: creatio
