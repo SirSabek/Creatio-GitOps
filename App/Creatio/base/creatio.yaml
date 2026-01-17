@@ -31,7 +31,6 @@ spec:
         - name: app-config
           emptyDir: {}
         - name: logs
-          emptyDir: {}   # for dev; use PVC if you want
       initContainers:
         - name: write-connectionstrings
           image: alpine:3.20
@@ -51,7 +50,7 @@ spec:
           command: ["/bin/sh","-lc"]
           args:
             - |
-              cat > /config/ConnectionStrings.config <<'EOF'
+              cat > /config/ConnectionStrings.config <<EOF
               <?xml version="1.0" encoding="utf-8"?>
               <connectionStrings>
                 <add name="db" connectionString="Server=db;Port=5432;Database=${POSTGRES_DB};User ID=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Timeout=500;CommandTimeout=400;MaxPoolSize=1024;" />
@@ -61,6 +60,7 @@ spec:
           volumeMounts:
             - name: app-config
               mountPath: /config
+
       containers:
         - name: creatio
           image: sirsabek/creatio:8.3-net8
